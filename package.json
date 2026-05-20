@@ -1,0 +1,42 @@
+{
+  "name": "transpop",
+  "version": "1.0.0",
+  "description": "Cross-platform translation popup desktop utility",
+  "main": "main.js",
+  "scripts": {
+    "postinstall": "node -e \"if (process.platform === 'darwin') { require('child_process').execSync('swiftc assets/copy-helper.swift -o assets/copy-helper'); console.log('Compiled macOS copy-helper'); }\"",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "keywords": [
+    "translation",
+    "desktop",
+    "electron",
+    "popup",
+    "ocr",
+    "clipboard"
+  ],
+  "author": "Bhola Khawas",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^42.2.0"
+  },
+  "overrides": {
+    "tar": "^7.5.15",
+    "tmp": "^0.2.5",
+    "@tootallnate/once": "^3.0.1"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}
