@@ -4,7 +4,6 @@
   "description": "Cross-platform translation popup desktop utility",
   "main": "main.js",
   "scripts": {
-    "postinstall": "node -e \"if (process.platform === 'darwin') { require('child_process').execSync('swiftc assets/copy-helper.swift -o assets/copy-helper'); console.log('Compiled macOS copy-helper'); }\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"
@@ -38,5 +37,35 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": true,
+        "icon": "./assets/icon"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-dmg",
+          "config": {
+            "name": "Transpop Installation",
+            "icon": "./assets/icon.icns",
+            "overwrite": true
+          }
+        },
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "transpop"
+          }
+        }
+      ]
+    }
   }
 }
