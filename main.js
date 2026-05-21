@@ -222,34 +222,24 @@ async function getSelectedText() {
 
   // Trigger copy shortcut based on OS
   if (process.platform === 'darwin') {
-    // macOS: Execute native Swift keypress simulator to avoid AppleScript/System Events Automation constraints
-    const copyHelperPath = path.join(__dirname, 'assets', 'copy-helper');
-    let execPath = copyHelperPath;
-
-    // Handle binary execution when packed inside the ASAR archive
-    if (copyHelperPath.includes('app.asar')) {
-      const tempDir = app.getPath('temp');
-      const tempHelperPath = path.join(tempDir, 'transpop-copy-helper');
-      try {
-        const binaryData = fs.readFileSync(copyHelperPath);
-        fs.writeFileSync(tempHelperPath, binaryData);
-        fs.chmodSync(tempHelperPath, '755');
-        execPath = tempHelperPath;
-      } catch (err) {
-        console.error('Failed to extract copy-helper from ASAR:', err);
-      }
+    const { execSync } = require('child_process');
+    // Short wait to ensure application focus
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Use System Events to send Cmd+C
+    console.log('Attempting copy via AppleScript System Events');
+    try {
+      execSync(`osascript -e 'tell application "System Events" to keystroke "c" using {command down}'`);
+    } catch (asErr) {
+      console.error('AppleScript copy failed:', asErr);
     }
-
-    exec(`"${execPath}"`, (err, stdout, stderr) => {
-      if (err) {
-        console.error('Error executing native copy helper:', err, stderr);
-      }
-    });
+    // Small pause to ensure clipboard is updated
+    await new Promise(resolve => setTimeout(resolve, 300));
   } else if (process.platform === 'win32') {
     // Windows: Create a temp VBScript for instantaneous keypress simulation (faster than PowerShell)
     try {
       const vbsPath = path.join(app.getPath('temp'), 'copy.vbs');
       fs.writeFileSync(vbsPath, 'Set wshShell = CreateObject("WScript.Shell")\nwshShell.SendKeys "^c"', 'utf8');
+      const { exec } = require('child_process');
       exec(`wscript.exe "${vbsPath}"`);
     } catch (err) {
       // Fallback to powershell if VBScript fails
@@ -257,15 +247,18 @@ async function getSelectedText() {
     }
   } else {
     // Linux: xdotool
+    const { exec } = require('child_process');
     exec('xdotool key ctrl+c');
   }
 
-  // Wait for the copy operation to complete (up to 150ms)
+  // Wait for the copy operation to complete (up to 600ms)
   let copiedText = '';
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 60; i++) {
     await new Promise(resolve => setTimeout(resolve, 10));
     copiedText = clipboard.readText();
+    console.log(`Clipboard poll attempt ${i + 1}: '${copiedText}'`);
     if (copiedText && copiedText.trim() !== '') {
+      console.log('Successfully captured text from clipboard on attempt', i + 1);
       break;
     }
   }
@@ -285,8 +278,10 @@ async function getSelectedText() {
 
 // Trigger the translation flow
 async function triggerTranslation() {
+  console.log('triggerTranslation invoked');
   // 1. Get the selected text FIRST, while the target window is still focused
   const selectedText = await getSelectedText();
+  console.log('Selected text captured:', selectedText);
 
   // 2. Ensure window is created
   if (!mainWindow) {
@@ -315,6 +310,7 @@ function registerShortcut() {
   try {
     globalShortcut.unregisterAll();
     const registered = globalShortcut.register(shortcut, () => {
+      console.log('Global shortcut triggered:', shortcut);
       triggerTranslation();
     });
 
