@@ -14,6 +14,7 @@ const geminiKeyInput = document.getElementById('gemini-key');
 const geminiConfigDiv = document.getElementById('gemini-config');
 const copyIcon = document.getElementById('copy-icon');
 const checkIcon = document.getElementById('check-icon');
+const clearBtn = document.getElementById('clear-btn');
 
 // App State
 let settings = {
@@ -42,6 +43,24 @@ async function init() {
   // Show/hide API key config
   toggleGeminiConfigVisibility();
 
+  // Show/hide developer troubleshooting tools based on isDev
+  const devTroubleDiv = document.getElementById('dev-troubleshooting');
+  if (devTroubleDiv) {
+    if (settings.isDev) {
+      devTroubleDiv.classList.remove('hidden');
+    } else {
+      devTroubleDiv.classList.add('hidden');
+    }
+  }
+
+  // Handle open log button in Settings drawer
+  const settingsOpenLogBtn = document.getElementById('settings-open-log');
+  if (settingsOpenLogBtn) {
+    settingsOpenLogBtn.addEventListener('click', () => {
+      window.electronAPI.openLogFile();
+    });
+  }
+
   // Listen for text captured from other windows
   window.electronAPI.onTranslateText((text) => {
     showLoader(false);
@@ -54,6 +73,7 @@ async function init() {
       sourceTextarea.value = text;
       performTranslation(text);
     }
+    toggleClearBtnVisibility();
   });
 
   // Listen for settings command from system tray
@@ -63,6 +83,14 @@ async function init() {
 
   // Event Listeners
   sourceTextarea.addEventListener('input', handleSourceTextInput);
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      sourceTextarea.value = '';
+      toggleClearBtnVisibility();
+      performTranslation('');
+      sourceTextarea.focus();
+    });
+  }
   targetLanguageSelect.addEventListener('change', handleTargetLanguageChange);
   
   settingsToggleBtn.addEventListener('click', () => toggleSettingsDrawer(true));
@@ -129,15 +157,84 @@ async function performTranslation(text) {
     if (outputContainer) outputContainer.scrollTop = 0;
   } catch (err) {
     console.error('Translation error:', err);
-    translatedTextDiv.innerHTML = `<span style="color: #ef4444; font-size: 0.85rem;">Error: ${err.message || 'Failed to translate'}</span>`;
+    
+    let errorHtml = `
+      <div class="error-container">
+        <div class="error-header">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ef4444" stroke-width="2.5" fill="none">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span class="error-title">Translation Failed</span>
+        </div>
+        <div class="error-message">${err.message || 'An unknown API error occurred.'}</div>
+    `;
+
+    // Special tips for Google Translate length issues
+    if (settings.service === 'google' && text.length > 1500) {
+      errorHtml += `
+        <div class="error-tip">
+          <strong>Tip:</strong> The selected text is very long (${text.length} characters). Google's free translation service has strict length limits. Try selecting a smaller section of text, or configure <strong>Gemini AI</strong> in Settings to translate larger documents.
+        </div>
+      `;
+    } else {
+      errorHtml += `
+        <div class="error-tip">
+          <strong>Tip:</strong> Please check your internet connection and verify that your configurations are valid.
+        </div>
+      `;
+    }
+
+    // Only show Log File action button if we are in development mode
+    if (settings.isDev) {
+      errorHtml += `
+        <div class="error-actions">
+          <button id="open-log-btn" class="error-action-btn">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Open Log File
+          </button>
+        </div>
+      `;
+    }
+
+    errorHtml += `</div>`;
+    translatedTextDiv.innerHTML = errorHtml;
     currentTranslation = '';
+
+    // If dev button is rendered, hook up event listener
+    if (settings.isDev) {
+      const openLogBtn = document.getElementById('open-log-btn');
+      if (openLogBtn) {
+        openLogBtn.addEventListener('click', () => {
+          window.electronAPI.openLogFile();
+        });
+      }
+    }
   } finally {
     showLoader(false);
   }
 }
 
+// Show/hide quick clear button
+function toggleClearBtnVisibility() {
+  if (!clearBtn) return;
+  if (sourceTextarea.value && sourceTextarea.value.length > 0) {
+    clearBtn.classList.remove('hidden');
+  } else {
+    clearBtn.classList.add('hidden');
+  }
+}
+
 // Handle typing in source text box
 function handleSourceTextInput() {
+  toggleClearBtnVisibility();
   clearTimeout(debounceTimer);
   const text = sourceTextarea.value;
   

@@ -1,15 +1,18 @@
-# Transpop 🌐
+# TransPop 🌐
 
-Cross-platform translation popup desktop utility that captures clipboard text and OCR (Optical Character Recognition) data for instant translations.
+TransPop is a lightweight, cross-platform translation popup desktop utility. Highlight text anywhere on your screen and hit `Option + T` (Mac) or `Alt + T` (Windows/Linux) to instantly translate it.
 
 ---
 
 ## ✨ Features
 
-*   **Popup Translations:** Get instant translations in a lightweight, native-feeling desktop popup.
-*   **OCR Support:** Extract and translate text from images, screenshots, or un-copyable UI elements.
-*   **Clipboard Monitoring:** Automatically capture or trigger translations from your clipboard.
-*   **Cross-Platform:** Built with Electron, supporting macOS, Windows, and Linux out of the box.
+- **Instant Popups:** Get rapid translations in a beautiful glassmorphic desktop card that pops up next to your cursor.
+- **Resizable Window:** Drag the window edges to resize the utility. It enforces a minimum size of `320x240` to keep the UI clean, and automatically remembers your custom window dimensions for subsequent triggers.
+- **Responsive Layout:** Automatically switches layout from vertically stacked to a side-by-side split screen (Source on the left, Translation on the right) when the window is resized wider than `550px`.
+- **Text Quick-Clear:** A convenient `(×)` button appears inside the input textarea when text is typed or pasted, allowing you to wipe text and reset translations with a single click.
+- **Multi-Engine support:** Choose between the free Google Translate service or configure your own **Gemini AI** key inside the settings for high-quality, long-form content translations.
+- **Text-to-Speech (TTS):** Listen to translations read aloud in the target language.
+- **Developer Troubleshooting Logs (Dev Mode):** If a translation request fails (e.g., when sending extremely long payloads over the free Google Translate API), detailed logs (timestamp, service, length, payload preview, stack traces) are appended to a log file (`translation_errors.log` in user app data) during development. A shortcut link to open this file is available in the error notification and the settings panel.
 
 ---
 
@@ -25,31 +28,43 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
    ```bash
    git clone <your-repository-url>
    cd transpop
+   ```
+2. Install dependencies:
+   ```bash
    npm install
    ```
 
+---
+
 ## 🛠 Usage
 
-### Development
+### Running in Development
 
-Run the app in development mode:
+Launch the app locally in development mode:
 ```bash
 npm start
 ```
 
-To bundle the application into OS-specific distributables (like .dmg or .exe), run:
+### Packaging for Production
+
+To bundle the application into OS-specific installers (e.g., a `.dmg` on macOS, `.exe` on Windows, or `.deb` on Linux), run:
 ```bash
 npm run make
 ```
 
-### Configuration
+---
 
-Create a `.env` file in the project root to store your API keys:
+## ⚙️ Configuration
 
-```bash
-GOOGLE_API_KEY=your-google-api-key
-GEMINI_API_KEY=your-gemini-api-key
-```
+TransPop is designed to be fully configurable from within the app interface:
+1. **Open Settings:** Click the gear/settings icon on the top right of the popup, or click the tray icon and select **Settings...**.
+2. **Choose Engine:** Switch between **Google Translate (Free)** and **Gemini AI**.
+3. **Gemini Key:** Paste your key from [Google AI Studio](https://aistudio.google.com/) directly into the Settings drawer. 
+4. **Target Language:** Select your default translation target language.
+
+Settings are saved persistently in `settings.json` within your system's application data folder.
+
+---
 
 ## 📄 License
 

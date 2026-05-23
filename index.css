@@ -447,3 +447,141 @@ textarea::placeholder {
 .full-width {
   width: 100%;
 }
+
+/* Error Container Styling */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-title {
+  font-weight: 600;
+  color: #ef4444;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.error-tip {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+  line-height: 1.3;
+}
+
+.error-tip strong {
+  color: var(--text-primary);
+}
+
+.error-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.error-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.error-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--text-hint);
+}
+
+/* Input Panel Relative Positioning (needed for clear button) */
+.input-panel {
+  position: relative;
+}
+
+/* Clear Button Styling */
+.clear-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.clear-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  opacity: 1;
+  border-color: var(--border-glow);
+}
+
+.clear-btn:active {
+  transform: scale(0.92);
+}
+
+/* Make sure source text doesn't overlap clear button */
+#source-text {
+  padding-right: 36px;
+}
+
+/* Responsive Side-by-Side Layout when Wide */
+@media (min-width: 550px) {
+  .main-content {
+    flex-direction: row !important;
+  }
+
+  .divider {
+    width: 2px !important;
+    height: 100% !important;
+    margin: 0 4px;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .loader {
+    width: 2px !important;
+    height: 28px !important;
+    animation: loading-vertical 1.2s infinite ease-in-out !important;
+  }
+}
+
+@keyframes loading-vertical {
+  0% { top: 0%; height: 10%; }
+  50% { top: 40%; height: 30%; }
+  100% { top: 90%; height: 10%; }
+}

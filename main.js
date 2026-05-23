@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec, execSync } = require('child_process');
@@ -6,6 +6,36 @@ const { exec, execSync } = require('child_process');
 let mainWindow = null;
 let tray = null;
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+const logPath = path.join(app.getPath('userData'), 'translation_errors.log');
+
+// Function to log errors (only in development mode)
+function logTranslationError(error, details) {
+  if (app.isPackaged) return; // Do not log in production mode
+
+  try {
+    const timestamp = new Date().toISOString();
+    const divider = '='.repeat(60);
+    const logMessage = `
+${divider}
+TIMESTAMP: ${timestamp}
+SERVICE: ${details.service || 'unknown'}
+TARGET LANG: ${details.targetLang || 'unknown'}
+PAYLOAD LENGTH: ${details.payloadLength || 0} characters
+PAYLOAD PREVIEW:
+${details.payloadPreview || 'N/A'}
+ERROR MESSAGE: ${error.message || error}
+ERROR STATUS: ${error.status || 'N/A'}
+RESPONSE BODY: ${error.responseBody || 'N/A'}
+ERROR STACK:
+${error.stack || 'N/A'}
+${divider}
+`;
+    fs.appendFileSync(logPath, logMessage, 'utf8');
+    console.log(`Error logged to: ${logPath}`);
+  } catch (err) {
+    console.error('Failed to write to translation error log file:', err);
+  }
+}
 
 // Default Settings
 let settings = {
@@ -43,14 +73,16 @@ function createWindow() {
   if (mainWindow) return;
 
   mainWindow = new BrowserWindow({
-    width: 440,
-    height: 340,
+    width: settings.width || 440,
+    height: settings.height || 340,
     show: false,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
+    minWidth: 320,
+    minHeight: 240,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -60,8 +92,16 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
-  // Hide the window when it loses focus (blur)
+  // Save bounds to settings
+  function saveWindowBounds() {
+    if (!mainWindow) return;
+    const [width, height] = mainWindow.getSize();
+    saveSettings({ width, height });
+  }
+
+  // Hide the window when it loses focus (blur) and save bounds
   mainWindow.on('blur', () => {
+    saveWindowBounds();
     mainWindow.hide();
   });
 
@@ -226,7 +266,6 @@ async function getSelectedText() {
     // Short wait to ensure application focus
     await new Promise(resolve => setTimeout(resolve, 100));
     // Use System Events to send Cmd+C
-    console.log('Attempting copy via AppleScript System Events');
     try {
       execSync(`osascript -e 'tell application "System Events" to keystroke "c" using {command down}'`);
     } catch (asErr) {
@@ -256,9 +295,7 @@ async function getSelectedText() {
   for (let i = 0; i < 60; i++) {
     await new Promise(resolve => setTimeout(resolve, 10));
     copiedText = clipboard.readText();
-    console.log(`Clipboard poll attempt ${i + 1}: '${copiedText}'`);
     if (copiedText && copiedText.trim() !== '') {
-      console.log('Successfully captured text from clipboard on attempt', i + 1);
       break;
     }
   }
@@ -278,10 +315,8 @@ async function getSelectedText() {
 
 // Trigger the translation flow
 async function triggerTranslation() {
-  console.log('triggerTranslation invoked');
   // 1. Get the selected text FIRST, while the target window is still focused
   const selectedText = await getSelectedText();
-  console.log('Selected text captured:', selectedText);
 
   // 2. Ensure window is created
   if (!mainWindow) {
@@ -310,7 +345,6 @@ function registerShortcut() {
   try {
     globalShortcut.unregisterAll();
     const registered = globalShortcut.register(shortcut, () => {
-      console.log('Global shortcut triggered:', shortcut);
       triggerTranslation();
     });
 
@@ -354,7 +388,7 @@ ipcMain.on('hide-window', () => {
 });
 
 ipcMain.handle('get-settings', () => {
-  return settings;
+  return { ...settings, isDev: !app.isPackaged };
 });
 
 ipcMain.handle('save-settings', (event, newSettings) => {
@@ -366,55 +400,92 @@ ipcMain.handle('copy-to-clipboard', (event, text) => {
   return true;
 });
 
+ipcMain.handle('open-log-file', async () => {
+  if (app.isPackaged) return false;
+  try {
+    if (!fs.existsSync(logPath)) {
+      fs.writeFileSync(logPath, `--- TransPop Error Log initialized at ${new Date().toISOString()} ---\n`, 'utf8');
+    }
+    await shell.openPath(logPath);
+    return true;
+  } catch (err) {
+    console.error('Failed to open log file:', err);
+    return false;
+  }
+});
+
 // Translation Engine Fetching (handled in main to avoid CORS & hide secrets)
 ipcMain.handle('translate-api', async (event, { text, service, targetLang, apiKey }) => {
   if (!text || text.trim() === '') return '';
 
-  if (service === 'gemini') {
-    if (!apiKey) {
-      throw new Error('Gemini API key is required. Please set it in Settings.');
-    }
+  const payloadLength = text.length;
+  const payloadPreview = text.slice(0, 500) + (text.length > 500 ? '...' : '');
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  try {
+    if (service === 'gemini') {
+      if (!apiKey) {
+        throw new Error('Gemini API key is required. Please set it in Settings.');
+      }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Translate the following text into the language with code '${targetLang}'. Return ONLY the direct translation. Do not wrap in quotes or add any conversational intro, outro, markdown formatting or explanation. Keep line breaks intact. Text to translate:\n\n${text}`
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Translate the following text into the language with code '${targetLang}'. Return ONLY the direct translation. Do not wrap in quotes or add any conversational intro, outro, markdown formatting or explanation. Keep line breaks intact. Text to translate:\n\n${text}`
+            }]
           }]
-        }]
-      })
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const errMessage = errData.error?.message || `Gemini API returned status ${response.status}`;
+        const error = new Error(errMessage);
+        error.status = response.status;
+        error.responseBody = JSON.stringify(errData);
+        throw error;
+      }
+
+      const data = await response.json();
+      const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!result) throw new Error('Invalid response structure from Gemini API');
+      return result.trim();
+    } else {
+      // Google Translate Free Mirror API
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        const error = new Error(`Google Translate API returned status ${response.status}`);
+        error.status = response.status;
+        try {
+          error.responseBody = await response.text();
+        } catch (_) {}
+        throw error;
+      }
+
+      const data = await response.json();
+      if (!data || !data[0]) {
+        throw new Error('Invalid response structure from Google Translate');
+      }
+
+      const translated = data[0].map(sentence => sentence[0]).join('');
+      return translated;
+    }
+  } catch (error) {
+    // Log details only in development
+    logTranslationError(error, {
+      service,
+      targetLang,
+      payloadLength,
+      payloadPreview
     });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `Gemini API returned status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!result) throw new Error('Invalid response structure from Gemini API');
-    return result.trim();
-  } else {
-    // Google Translate Free Mirror API
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Google Translate API returned status ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data || !data[0]) {
-      throw new Error('Invalid response structure from Google Translate');
-    }
-
-    const translated = data[0].map(sentence => sentence[0]).join('');
-    return translated;
+    throw error;
   }
 });
