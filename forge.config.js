@@ -4,13 +4,18 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: { unpack: "assets/**" },
+    icon: './assets/icon', // Resolves to icon.icns on macOS and icon.ico on Windows
   },
   rebuildConfig: {},
 
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        name: 'onpopup',
+        setupIcon: './assets/icon.ico',
+        setupExe: 'OnPopupSetup.exe',
+      },
     },
     {
       name: '@electron-forge/maker-zip',
