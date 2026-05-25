@@ -313,7 +313,7 @@ function createTray() {
     { label: 'Open Translator', accelerator: 'Option+T', click: () => triggerTranslation() },
     { label: 'Clipboard History', accelerator: 'Option+V', click: () => triggerClipboardHistory() },
     {
-      label: 'Settings...',
+      label: 'Settings',
       click: () => {
         if (!mainWindow) {
           createWindow();
