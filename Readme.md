@@ -1,29 +1,71 @@
 # OnPopup 🌐
 
-OnPopup is a lightweight, cross-platform translation popup desktop utility. Highlight text anywhere on your screen and hit `Option + T` (Mac) or `Alt + T` (Windows/Linux) to instantly translate it.
+OnPopup is a premium, lightweight, cross-platform desktop utility that combines **instant language translation** and **advanced clipboard history management** into a single, beautiful glassmorphic popup drawer.
+
+Designed for maximum productivity, OnPopup is completely keyboard-driven. It lives in your status bar / system tray and appears exactly where you need it, when you need it.
 
 ---
 
-## ✨ Features
+## 🎯 Objective
 
-- **Instant Popups:** Get rapid translations in a beautiful glassmorphic desktop card that pops up next to your cursor.
-- **Resizable Window:** Drag the window edges to resize the utility. It enforces a minimum size of `320x240` to keep the UI clean, and automatically remembers your custom window dimensions for subsequent triggers.
-- **Responsive Layout:** Automatically switches layout from vertically stacked to a side-by-side split screen (Source on the left, Translation on the right) when the window is resized wider than `550px`.
-- **Text Quick-Clear:** A convenient `(×)` button appears inside the input textarea when text is typed or pasted, allowing you to wipe text and reset translations with a single click.
-- **Multi-Engine support:** Choose between the free Google Translate service or configure your own **Gemini AI** key inside the settings for high-quality, long-form content translations.
-- **Text-to-Speech (TTS):** Listen to translations read aloud in the target language.
-- **Developer Troubleshooting Logs (Dev Mode):** If a translation request fails (e.g., when sending extremely long payloads over the free Google Translate API), detailed logs (timestamp, service, length, payload preview, stack traces) are appended to a log file (`translation_errors.log` in user app data) during development. A shortcut link to open this file is available in the error notification and the settings panel.
+Modern workflows require constant switching between copy-pasting text, translating phrases, and configuring api interfaces. **OnPopup** was built to solve this by providing:
+1. **Zero-Friction Access:** Highlighting text anywhere and pressing a hotkey instantly pulls up a translation.
+2. **Unified Clipboard & Translation Flow:** Seamlessly selecting previous copies from your history and translating them in one keystroke, or pasting them into another app immediately.
+3. **Context Retention:** Explicitly tracking the active background app on macOS so that selecting a clipboard history item automatically focuses back to the target text field and triggers an OS-level paste event.
 
 ---
 
-## 🚀 Getting Started
+## 🎨 Feature Guide
+
+### 1. Translation & Language Settings
+* **Auto-Detect Source:** Type or highlight any language; the system automatically detects the source.
+* **Dual Engines:**
+  * **Google Translate (Free):** Fast, default out-of-the-box translations.
+  * **Gemini AI:** Select Gemini in settings, paste your key, and get high-quality contextual translations.
+* **Smart Auto-Swap (Bidirectional Translation):**
+  * Define two core languages (e.g., English $\leftrightarrow$ Japanese) in Settings.
+  * When enabled, if your input language is English, it translates to Japanese. If your input is Japanese, it automatically translates to English.
+  * Includes a simple toggle to enable/disable this feature.
+* **Text-to-Speech (TTS):** Click the speaker button to hear translation pronunciation.
+* **Window Persistence:** Drag window edges to resize. OnPopup remembers your custom window dimensions for subsequent launches.
+* **Quick-Clear:** A fast `(×)` action button inside the input area to wipe text in one click.
+
+#### ⌨️ Translation Shortcuts
+| Action | Shortcut |
+| :--- | :--- |
+| **Summon Translator Popup** | `Option + T` (macOS) / `Alt + T` (Windows/Linux) |
+| **Close / Hide Window** | `Escape` |
+
+---
+
+### 2. Clipboard History & Drawer
+* **Background Monitoring:** Safely monitors your system clipboard in the background, updating your history drawer list in real-time.
+* **Smart Auto-Paste:** Select an item from your history; the app restores focus to your previous frontmost window and automatically executes a native `Cmd + V` (macOS) or `Ctrl + V` paste event.
+* **Drawer Switcher UI:** Quickly toggle between the Translator, Clipboard History, and Settings panels from the top bar.
+* **Translate from History:** Send any clipboard history item directly into the translator input to convert it to your target language.
+* **Fuzzy Search:** Type in the clipboard search field to instantly filter through your copy history.
+* **Persisted History:** Copy history is saved securely to disk so it survives system reboots.
+
+#### ⌨️ Clipboard Drawer Shortcuts
+| Action | Shortcut |
+| :--- | :--- |
+| **Summon Clipboard History Drawer** | `Option + V` (macOS) / `Alt + V` (Windows/Linux) |
+| **Navigate List** | `Up Arrow` / `Down Arrow` |
+| **Paste Selected Item** | `Enter` |
+| **Translate Selected Item** | `Shift + Enter` |
+| **Quick-Paste Item (1st - 9th)** | `1` to `9` (when clipboard search is empty) |
+| **Dismiss Drawer / Close Window** | `Escape` |
+
+---
+
+## 🛠 Developer Guide
 
 ### Prerequisites
-
-Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
+* **Node.js** (v16.4.0 or higher recommended)
+* **npm** (Node package manager)
+* **Swift Compiler (`swiftc`)** *(macOS packaging only)*: The app compiles a helper binary (`assets/copy-helper.swift`) on macOS during build time to ensure reliable native paste injection.
 
 ### Installation
-
 1. Clone the repository:
    ```bash
    git clone <your-repository-url>
@@ -34,35 +76,26 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
    npm install
    ```
 
----
-
-## 🛠 Usage
-
-### Running in Development
-
-Launch the app locally in development mode:
-```bash
-npm start
-```
-
-### Packaging for Production
-
-To bundle the application into OS-specific installers (e.g., a `.dmg` on macOS, `.exe` on Windows, or `.deb` on Linux), run:
-```bash
-npm run make
-```
+### NPM Development Commands
+| Command | Purpose |
+| :--- | :--- |
+| **`npm start`** | Runs the app in development mode with live logs. |
+| **`npm run package`** | Bundles the application locally for your target architecture. |
+| **`npm run make`** | Generates platform-specific installers (e.g. `.dmg` for macOS, Squirrel for Windows). |
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration & Persistent Data
 
-OnPopup is designed to be fully configurable from within the app interface:
-1. **Open Settings:** Click the gear/settings icon on the top right of the popup, or click the tray icon and select **Settings...**.
-2. **Choose Engine:** Switch between **Google Translate (Free)** and **Gemini AI**.
-3. **Gemini Key:** Paste your key from [Google AI Studio](https://aistudio.google.com/) directly into the Settings drawer. 
-4. **Target Language:** Select your default translation target language.
+OnPopup stores user data locally in your operating system's standard application support folders:
+* **Settings:** `settings.json` contains target languages, selected engines, Gemini keys, window sizes, and auto-swap toggles.
+* **Clipboard History:** `clipboard_history.json` houses your cached copies.
+* **Troubleshooting Logs:** In developer mode, API errors, timeouts, or payload failures are written to `translation_errors.log`. You can open this file using the log shortcut link in the settings panel.
 
-Settings are saved persistently in `settings.json` within your system's application data folder.
+### Directory Locations
+* **macOS:** `~/Library/Application Support/onpopup/`
+* **Windows:** `%APPDATA%\onpopup\`
+* **Linux:** `~/.config/onpopup/`
 
 ---
 
