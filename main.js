@@ -19,7 +19,7 @@ let lastActiveApp = null;
 function updateLastActiveApp() {
   try {
     const activeApp = execSync(`osascript -e 'tell application "System Events" to name of first application process whose frontmost is true'`).toString().trim();
-    const ignoredApps = ['TransPop', 'transpop', 'Electron', 'System Events', 'SystemUIServer', 'loginwindow'];
+    const ignoredApps = ['OnPopup', 'onpopup', 'TransPop', 'transpop', 'Electron', 'System Events', 'SystemUIServer', 'loginwindow'];
     if (activeApp && !ignoredApps.includes(activeApp)) {
       lastActiveApp = activeApp.replace(/"/g, '');
     }
@@ -171,8 +171,8 @@ function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: true,
-    minWidth: 320,
-    minHeight: 240,
+    minWidth: 350,
+    minHeight: 260,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -307,7 +307,7 @@ function createTray() {
   }
 
   tray = new Tray(trayIcon);
-  tray.setToolTip('TransPop - Quick Translator');
+  tray.setToolTip('OnPopup - Quick Translator');
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open Translator', accelerator: 'Option+T', click: () => triggerTranslation() },
@@ -328,8 +328,9 @@ function createTray() {
         mainWindow.focus();
       }
     },
+    { label: 'About OnPopup', click: () => shell.openExternal('https://github.com/MrBhola/translaPop#transpop-') },
     { type: 'separator' },
-    { label: 'Quit TransPop', click: () => app.quit() }
+    { label: 'Quit OnPopup', click: () => app.quit() }
   ]);
 
   // Toggle window on left click
@@ -449,7 +450,7 @@ function registerShortcuts() {
 
   try {
     globalShortcut.unregisterAll();
-    
+
     // Register translation shortcut
     const transRegistered = globalShortcut.register(translateShortcut, () => {
       triggerTranslation();
@@ -542,11 +543,23 @@ ipcMain.handle('copy-to-clipboard', (event, text) => {
   return true;
 });
 
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    if (url.startsWith('https://github.com/')) {
+      await shell.openExternal(url);
+      return true;
+    }
+  } catch (err) {
+    console.error('Failed to open external url:', err);
+  }
+  return false;
+});
+
 ipcMain.handle('open-log-file', async () => {
   if (app.isPackaged) return false;
   try {
     if (!fs.existsSync(logPath)) {
-      fs.writeFileSync(logPath, `--- TransPop Error Log initialized at ${new Date().toISOString()} ---\n`, 'utf8');
+      fs.writeFileSync(logPath, `--- OnPopup Error Log initialized at ${new Date().toISOString()} ---\n`, 'utf8');
     }
     await shell.openPath(logPath);
     return true;
@@ -722,7 +735,7 @@ ipcMain.handle('translate-api', async (event, { text, service, targetLang, apiKe
           error.status = response.status;
           try {
             error.responseBody = await response.text();
-          } catch (_) {}
+          } catch (_) { }
           throw error;
         }
 
@@ -747,10 +760,10 @@ ipcMain.handle('translate-api', async (event, { text, service, targetLang, apiKe
     if (isAutoSwapped && service === 'google') {
       const langA = settings.autoSwapLangA || 'en';
       const langB = settings.autoSwapLangB || 'ja';
-      
+
       const baseDetected = result.detectedLang ? result.detectedLang.split('-')[0].toLowerCase() : '';
       const baseActual = actualTargetLang ? actualTargetLang.split('-')[0].toLowerCase() : '';
-      
+
       if (baseDetected === baseActual) {
         const alternateTarget = actualTargetLang === langB ? langA : langB;
         if (alternateTarget !== actualTargetLang) {
