@@ -1,5 +1,5 @@
 {
-  "name": "transpop",
+  "name": "onpopup",
   "version": "1.0.0",
   "description": "Cross-platform translation popup desktop utility",
   "main": "main.js",
@@ -54,7 +54,7 @@
         {
           "name": "@electron-forge/maker-dmg",
           "config": {
-            "name": "Transpop Installation",
+            "name": "OnPopup Installation",
             "icon": "./assets/icon.icns",
             "overwrite": true
           }
@@ -62,7 +62,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "transpop"
+            "name": "onpopup"
           }
         }
       ]

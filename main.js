@@ -19,7 +19,7 @@ let lastActiveApp = null;
 function updateLastActiveApp() {
   try {
     const activeApp = execSync(`osascript -e 'tell application "System Events" to name of first application process whose frontmost is true'`).toString().trim();
-    const ignoredApps = ['TransPop', 'transpop', 'Electron', 'System Events', 'SystemUIServer', 'loginwindow'];
+    const ignoredApps = ['OnPopup', 'onpopup', 'TransPop', 'transpop', 'Electron', 'System Events', 'SystemUIServer', 'loginwindow'];
     if (activeApp && !ignoredApps.includes(activeApp)) {
       lastActiveApp = activeApp.replace(/"/g, '');
     }
@@ -307,7 +307,7 @@ function createTray() {
   }
 
   tray = new Tray(trayIcon);
-  tray.setToolTip('TransPop - Quick Translator');
+  tray.setToolTip('OnPopup - Quick Translator');
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open Translator', accelerator: 'Option+T', click: () => triggerTranslation() },
@@ -329,7 +329,7 @@ function createTray() {
       }
     },
     { type: 'separator' },
-    { label: 'Quit TransPop', click: () => app.quit() }
+    { label: 'Quit OnPopup', click: () => app.quit() }
   ]);
 
   // Toggle window on left click
@@ -546,7 +546,7 @@ ipcMain.handle('open-log-file', async () => {
   if (app.isPackaged) return false;
   try {
     if (!fs.existsSync(logPath)) {
-      fs.writeFileSync(logPath, `--- TransPop Error Log initialized at ${new Date().toISOString()} ---\n`, 'utf8');
+      fs.writeFileSync(logPath, `--- OnPopup Error Log initialized at ${new Date().toISOString()} ---\n`, 'utf8');
     }
     await shell.openPath(logPath);
     return true;

@@ -1,6 +1,6 @@
-# TransPop 🌐
+# OnPopup 🌐
 
-TransPop is a lightweight, cross-platform translation popup desktop utility. Highlight text anywhere on your screen and hit `Option + T` (Mac) or `Alt + T` (Windows/Linux) to instantly translate it.
+OnPopup is a lightweight, cross-platform translation popup desktop utility. Highlight text anywhere on your screen and hit `Option + T` (Mac) or `Alt + T` (Windows/Linux) to instantly translate it.
 
 ---
 
@@ -27,7 +27,7 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 1. Clone the repository:
    ```bash
    git clone <your-repository-url>
-   cd transpop
+   cd mac-trans
    ```
 2. Install dependencies:
    ```bash
@@ -56,7 +56,7 @@ npm run make
 
 ## ⚙️ Configuration
 
-TransPop is designed to be fully configurable from within the app interface:
+OnPopup is designed to be fully configurable from within the app interface:
 1. **Open Settings:** Click the gear/settings icon on the top right of the popup, or click the tray icon and select **Settings...**.
 2. **Choose Engine:** Switch between **Google Translate (Free)** and **Gemini AI**.
 3. **Gemini Key:** Paste your key from [Google AI Studio](https://aistudio.google.com/) directly into the Settings drawer. 

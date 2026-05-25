@@ -19,7 +19,7 @@ module.exports = {
     {
       name: '@electron-forge/maker-dmg',
       config: {
-        name: 'Transpop Installation',
+        name: 'OnPopup Installation',
         icon: './assets/icon.icns',
         overwrite: true,
       },
