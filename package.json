@@ -6,7 +6,10 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "make-mac": "electron-forge make --platform=darwin",
+    "make-win": "electron-forge make --platform=win32",
+    "make-all": "npm run make-mac && npm run make-win"
   },
   "keywords": [
     "translation",
@@ -62,7 +65,9 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "onpopup"
+            "name": "onpopup",
+            "setupIcon": "./assets/icon.ico",
+            "setupExe": "OnPopupSetup.exe"
           }
         }
       ]
