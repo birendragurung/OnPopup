@@ -12,6 +12,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('open-settings', subscription);
     return () => ipcRenderer.removeListener('open-settings', subscription);
   },
+  onShowClipboardHistory: (callback) => {
+    const subscription = (event, history) => callback(history);
+    ipcRenderer.on('show-clipboard-history', subscription);
+    return () => ipcRenderer.removeListener('show-clipboard-history', subscription);
+  },
+  onClipboardHistoryUpdated: (callback) => {
+    const subscription = (event, history) => callback(history);
+    ipcRenderer.on('clipboard-history-updated', subscription);
+    return () => ipcRenderer.removeListener('clipboard-history-updated', subscription);
+  },
 
   // Calls from Renderer to Main
   translate: (text, service, targetLang, apiKey) => 
@@ -24,5 +34,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   
-  openLogFile: () => ipcRenderer.invoke('open-log-file')
+  openLogFile: () => ipcRenderer.invoke('open-log-file'),
+
+  getClipboardHistory: () => ipcRenderer.invoke('get-clipboard-history'),
+  clearClipboardHistory: () => ipcRenderer.invoke('clear-clipboard-history'),
+  pasteClipboardItem: (text) => ipcRenderer.invoke('paste-clipboard-item', text)
 });
