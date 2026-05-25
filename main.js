@@ -328,9 +328,9 @@ function createTray() {
         mainWindow.focus();
       }
     },
-    { label: 'About OnPopup', click: () => shell.openExternal('https://github.com/MrBhola/translaPop#transpop-') },
+    { label: 'About', click: () => shell.openExternal('https://github.com/MrBhola/translaPop#onpopup-') },
     { type: 'separator' },
-    { label: 'Quit OnPopup', click: () => app.quit() }
+    { label: 'Quit', click: () => app.quit() }
   ]);
 
   // Toggle window on left click
