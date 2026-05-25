@@ -171,8 +171,8 @@ function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: true,
-    minWidth: 320,
-    minHeight: 240,
+    minWidth: 350,
+    minHeight: 260,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
