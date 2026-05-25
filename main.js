@@ -328,6 +328,7 @@ function createTray() {
         mainWindow.focus();
       }
     },
+    { label: 'About OnPopup', click: () => shell.openExternal('https://github.com/MrBhola/translaPop#transpop-') },
     { type: 'separator' },
     { label: 'Quit OnPopup', click: () => app.quit() }
   ]);
@@ -540,6 +541,18 @@ ipcMain.handle('save-settings', (event, newSettings) => {
 ipcMain.handle('copy-to-clipboard', (event, text) => {
   clipboard.writeText(text);
   return true;
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    if (url.startsWith('https://github.com/')) {
+      await shell.openExternal(url);
+      return true;
+    }
+  } catch (err) {
+    console.error('Failed to open external url:', err);
+  }
+  return false;
 });
 
 ipcMain.handle('open-log-file', async () => {

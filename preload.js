@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   
   openLogFile: () => ipcRenderer.invoke('open-log-file'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   getClipboardHistory: () => ipcRenderer.invoke('get-clipboard-history'),
   clearClipboardHistory: () => ipcRenderer.invoke('clear-clipboard-history'),

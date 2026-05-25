@@ -15,6 +15,7 @@ const geminiConfigDiv = document.getElementById('gemini-config');
 const copyIcon = document.getElementById('copy-icon');
 const checkIcon = document.getElementById('check-icon');
 const clearBtn = document.getElementById('clear-btn');
+const githubLink = document.getElementById('github-link');
 
 // Clipboard Selectors
 const clipboardDrawer = document.getElementById('clipboard-drawer');
@@ -146,6 +147,10 @@ async function init() {
   serviceProviderSelect.addEventListener('change', toggleGeminiConfigVisibility);
   autoswapEnableInput.addEventListener('change', toggleAutoswapConfigVisibility);
   settingsSaveBtn.addEventListener('click', saveSettings);
+  githubLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.electronAPI.openExternal('https://github.com/MrBhola/translaPop#transpop-');
+  });
   
   copyBtn.addEventListener('click', copyTranslation);
   speakBtn.addEventListener('click', speakTranslation);
