@@ -449,7 +449,7 @@ function registerShortcuts() {
 
   try {
     globalShortcut.unregisterAll();
-    
+
     // Register translation shortcut
     const transRegistered = globalShortcut.register(translateShortcut, () => {
       triggerTranslation();
@@ -722,7 +722,7 @@ ipcMain.handle('translate-api', async (event, { text, service, targetLang, apiKe
           error.status = response.status;
           try {
             error.responseBody = await response.text();
-          } catch (_) {}
+          } catch (_) { }
           throw error;
         }
 
@@ -747,10 +747,10 @@ ipcMain.handle('translate-api', async (event, { text, service, targetLang, apiKe
     if (isAutoSwapped && service === 'google') {
       const langA = settings.autoSwapLangA || 'en';
       const langB = settings.autoSwapLangB || 'ja';
-      
+
       const baseDetected = result.detectedLang ? result.detectedLang.split('-')[0].toLowerCase() : '';
       const baseActual = actualTargetLang ? actualTargetLang.split('-')[0].toLowerCase() : '';
-      
+
       if (baseDetected === baseActual) {
         const alternateTarget = actualTargetLang === langB ? langA : langB;
         if (alternateTarget !== actualTargetLang) {
