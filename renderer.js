@@ -16,16 +16,39 @@ const copyIcon = document.getElementById('copy-icon');
 const checkIcon = document.getElementById('check-icon');
 const clearBtn = document.getElementById('clear-btn');
 
+// Clipboard Selectors
+const clipboardDrawer = document.getElementById('clipboard-drawer');
+const clipboardToTranslatorBtn = document.getElementById('clipboard-to-translator');
+const clipboardToSettingsBtn = document.getElementById('clipboard-to-settings');
+const clipboardToggleBtn = document.getElementById('clipboard-toggle');
+const clipboardSearchInput = document.getElementById('clipboard-search');
+const clipboardClearHistoryBtn = document.getElementById('clipboard-clear-history');
+const clipboardListDiv = document.getElementById('clipboard-list');
+
+// Auto-Swap Selectors
+const autoswapEnableInput = document.getElementById('autoswap-enable');
+const autoswapConfigDiv = document.getElementById('autoswap-config');
+const autoswapLangASelect = document.getElementById('autoswap-lang-a');
+const autoswapLangBSelect = document.getElementById('autoswap-lang-b');
+
 // App State
 let settings = {
   service: 'google',
   geminiKey: '',
-  targetLang: 'en'
+  targetLang: 'en',
+  autoSwapEnabled: false,
+  autoSwapLangA: 'en',
+  autoSwapLangB: 'ja'
 };
 
 let currentTranslation = '';
 let debounceTimer = null;
 let currentUtterance = null;
+
+// Clipboard History State
+let clipboardHistory = [];
+let filteredHistory = [];
+let activeHistoryIndex = 0;
 
 // Initialize
 async function init() {
@@ -39,6 +62,15 @@ async function init() {
   targetLanguageSelect.value = settings.targetLang;
   serviceProviderSelect.value = settings.service;
   geminiKeyInput.value = settings.geminiKey || '';
+
+  // Populate Auto-Swap inputs
+  autoswapEnableInput.checked = settings.autoSwapEnabled || false;
+  autoswapLangASelect.value = settings.autoSwapLangA || 'en';
+  autoswapLangBSelect.value = settings.autoSwapLangB || 'ja';
+
+  // Toggle Auto-Swap config and state
+  toggleAutoswapConfigVisibility();
+  updateTargetLanguageSelectState();
 
   // Show/hide API key config
   toggleGeminiConfigVisibility();
@@ -64,6 +96,8 @@ async function init() {
   // Listen for text captured from other windows
   window.electronAPI.onTranslateText((text) => {
     showLoader(false);
+    toggleSettingsDrawer(false);
+    toggleClipboardDrawer(false);
     
     if (!text || text.trim() === '') {
       sourceTextarea.value = '';
@@ -81,6 +115,20 @@ async function init() {
     toggleSettingsDrawer(true);
   });
 
+  // Listen for clipboard history from global shortcut trigger
+  window.electronAPI.onShowClipboardHistory((history) => {
+    clipboardHistory = history;
+    toggleClipboardDrawer(true);
+  });
+
+  // Listen for real-time history updates
+  window.electronAPI.onClipboardHistoryUpdated((history) => {
+    clipboardHistory = history;
+    if (!clipboardDrawer.classList.contains('hidden')) {
+      renderClipboardList();
+    }
+  });
+
   // Event Listeners
   sourceTextarea.addEventListener('input', handleSourceTextInput);
   if (clearBtn) {
@@ -96,13 +144,77 @@ async function init() {
   settingsToggleBtn.addEventListener('click', () => toggleSettingsDrawer(true));
   settingsCloseBtn.addEventListener('click', () => toggleSettingsDrawer(false));
   serviceProviderSelect.addEventListener('change', toggleGeminiConfigVisibility);
+  autoswapEnableInput.addEventListener('change', toggleAutoswapConfigVisibility);
   settingsSaveBtn.addEventListener('click', saveSettings);
   
   copyBtn.addEventListener('click', copyTranslation);
   speakBtn.addEventListener('click', speakTranslation);
 
-  // Global escape key to close/hide
+  // Clipboard drawer event listeners
+  clipboardToggleBtn.addEventListener('click', async () => {
+    const history = await window.electronAPI.getClipboardHistory();
+    clipboardHistory = history;
+    toggleClipboardDrawer(true);
+  });
+  clipboardToTranslatorBtn.addEventListener('click', () => {
+    toggleClipboardDrawer(false);
+  });
+  clipboardToSettingsBtn.addEventListener('click', () => {
+    toggleSettingsDrawer(true);
+  });
+  clipboardSearchInput.addEventListener('input', () => {
+    activeHistoryIndex = 0;
+    renderClipboardList();
+  });
+  clipboardClearHistoryBtn.addEventListener('click', async () => {
+    if (confirm('Are you sure you want to clear all clipboard history?')) {
+      await window.electronAPI.clearClipboardHistory();
+      clipboardHistory = [];
+      renderClipboardList();
+    }
+  });
+
+  // Global escape key and keyboard navigation
   window.addEventListener('keydown', (e) => {
+    // If clipboard drawer is visible, handle navigation and actions
+    if (!clipboardDrawer.classList.contains('hidden')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        toggleClipboardDrawer(false);
+        window.electronAPI.hideWindow();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (filteredHistory.length > 0) {
+          activeHistoryIndex = (activeHistoryIndex + 1) % filteredHistory.length;
+          renderClipboardList();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (filteredHistory.length > 0) {
+          activeHistoryIndex = (activeHistoryIndex - 1 + filteredHistory.length) % filteredHistory.length;
+          renderClipboardList();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeHistoryIndex >= 0 && activeHistoryIndex < filteredHistory.length) {
+          if (e.shiftKey) {
+            translateClipboardItem(filteredHistory[activeHistoryIndex]);
+          } else {
+            pasteItem(filteredHistory[activeHistoryIndex]);
+          }
+        }
+      } else if (/^[1-9]$/.test(e.key) && clipboardSearchInput.value === '') {
+        // Quick number selection when search is empty
+        const num = parseInt(e.key, 10);
+        const index = num - 1;
+        if (index >= 0 && index < filteredHistory.length) {
+          e.preventDefault();
+          pasteItem(filteredHistory[index]);
+        }
+      }
+      return;
+    }
+
     if (e.key === 'Escape') {
       if (!settingsDrawer.classList.contains('hidden')) {
         toggleSettingsDrawer(false);
@@ -256,13 +368,156 @@ function handleTargetLanguageChange() {
 function toggleSettingsDrawer(show) {
   if (show) {
     settingsDrawer.classList.remove('hidden');
+    clipboardDrawer.classList.add('hidden'); // Hide clipboard drawer
     // Load fresh inputs
     serviceProviderSelect.value = settings.service;
     geminiKeyInput.value = settings.geminiKey || '';
+    
+    // Load fresh Auto-Swap inputs
+    autoswapEnableInput.checked = settings.autoSwapEnabled || false;
+    autoswapLangASelect.value = settings.autoSwapLangA || 'en';
+    autoswapLangBSelect.value = settings.autoSwapLangB || 'ja';
+    
     toggleGeminiConfigVisibility();
+    toggleAutoswapConfigVisibility();
   } else {
     settingsDrawer.classList.add('hidden');
   }
+}
+
+// Clipboard History Drawer Actions
+function toggleClipboardDrawer(show) {
+  if (show) {
+    clipboardDrawer.classList.remove('hidden');
+    settingsDrawer.classList.add('hidden'); // Hide settings drawer
+    clipboardSearchInput.value = '';
+    activeHistoryIndex = 0;
+    renderClipboardList();
+    setTimeout(() => {
+      clipboardSearchInput.focus();
+    }, 50);
+  } else {
+    clipboardDrawer.classList.add('hidden');
+    sourceTextarea.focus();
+  }
+}
+
+function renderClipboardList() {
+  const query = clipboardSearchInput.value.toLowerCase().trim();
+  
+  filteredHistory = clipboardHistory.filter(item => 
+    item.toLowerCase().includes(query)
+  );
+
+  clipboardListDiv.innerHTML = '';
+
+  if (filteredHistory.length === 0) {
+    clipboardListDiv.innerHTML = `
+      <div class="clipboard-list-empty">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" style="opacity: 0.5; margin-bottom: 4px;">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span>No matching history items</span>
+      </div>
+    `;
+    activeHistoryIndex = -1;
+    return;
+  }
+
+  if (activeHistoryIndex >= filteredHistory.length) {
+    activeHistoryIndex = filteredHistory.length - 1;
+  }
+  if (activeHistoryIndex < 0 && filteredHistory.length > 0) {
+    activeHistoryIndex = 0;
+  }
+
+  filteredHistory.forEach((text, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = `clipboard-item ${index === activeHistoryIndex ? 'active' : ''}`;
+    itemDiv.dataset.index = index;
+
+    const shortcutText = index < 9 ? `${index + 1}` : '';
+    const charCount = text.length;
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const metaText = `${charCount} char${charCount !== 1 ? 's' : ''} • ${wordCount} word${wordCount !== 1 ? 's' : ''}`;
+
+    itemDiv.innerHTML = `
+      <div class="item-shortcut">${shortcutText || '•'}</div>
+      <div class="item-content">
+        <div class="item-text" title="${escapeHtml(text)}">${escapeHtml(text)}</div>
+        <div class="item-meta">${metaText}</div>
+      </div>
+      <div class="item-actions">
+        <button class="item-action-btn translate-action" title="Translate this item (Shift+Enter)">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </button>
+        <button class="item-action-btn paste-action" title="Copy & Paste (Enter)">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    // Clicking the item body copies and pastes
+    itemDiv.addEventListener('click', () => {
+      pasteItem(text);
+    });
+
+    // Translate button click
+    const translateBtn = itemDiv.querySelector('.translate-action');
+    translateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      translateClipboardItem(text);
+    });
+
+    // Paste button click
+    const pasteBtn = itemDiv.querySelector('.paste-action');
+    pasteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pasteItem(text);
+    });
+
+    clipboardListDiv.appendChild(itemDiv);
+  });
+
+  const activeItem = clipboardListDiv.querySelector('.clipboard-item.active');
+  if (activeItem) {
+    activeItem.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function pasteItem(text) {
+  window.electronAPI.pasteClipboardItem(text);
+  toggleClipboardDrawer(false);
+}
+
+function translateClipboardItem(text) {
+  // Hide clipboard drawer but keep main translation window open
+  toggleClipboardDrawer(false);
+  
+  // Set translation source textarea
+  sourceTextarea.value = text;
+  if (typeof toggleClearBtnVisibility === 'function') {
+    toggleClearBtnVisibility();
+  }
+  
+  // Trigger translation instantly
+  performTranslation(text);
 }
 
 function toggleGeminiConfigVisibility() {
@@ -279,23 +534,39 @@ async function saveSettings() {
   const geminiKey = geminiKeyInput.value.trim();
   const targetLang = targetLanguageSelect.value;
 
+  const autoSwapEnabled = autoswapEnableInput.checked;
+  const autoSwapLangA = autoswapLangASelect.value;
+  const autoSwapLangB = autoswapLangBSelect.value;
+
   if (service === 'gemini' && !geminiKey) {
     alert('Please enter a valid Gemini API key or switch back to Google Translate.');
+    return;
+  }
+
+  if (autoSwapEnabled && autoSwapLangA === autoSwapLangB) {
+    alert('Language A and Language B must be different for Smart Auto-Swap.');
     return;
   }
 
   const success = await window.electronAPI.saveSettings({
     service,
     geminiKey,
-    targetLang
+    targetLang,
+    autoSwapEnabled,
+    autoSwapLangA,
+    autoSwapLangB
   });
 
   if (success) {
     settings.service = service;
     settings.geminiKey = geminiKey;
     settings.targetLang = targetLang;
+    settings.autoSwapEnabled = autoSwapEnabled;
+    settings.autoSwapLangA = autoSwapLangA;
+    settings.autoSwapLangB = autoSwapLangB;
     
     toggleSettingsDrawer(false);
+    updateTargetLanguageSelectState();
     // Refresh translation using new settings
     performTranslation(sourceTextarea.value);
   } else {
@@ -379,6 +650,61 @@ function stopSpeech() {
 // Make sure voices are loaded (helps Chrome/Electron fetch list asynchronously)
 if (speechSynthesis.onvoiceschanged !== undefined) {
   speechSynthesis.onvoiceschanged = () => {};
+}
+
+// Toggle Smart Auto-Swap config block visibility
+function toggleAutoswapConfigVisibility() {
+  if (autoswapEnableInput.checked) {
+    autoswapConfigDiv.classList.remove('hidden');
+  } else {
+    autoswapConfigDiv.classList.add('hidden');
+  }
+}
+
+// Update the main view target language selector state (disable if Auto-Swap is active)
+function updateTargetLanguageSelectState() {
+  if (settings.autoSwapEnabled) {
+    let indicator = document.getElementById('autoswap-indicator');
+    if (!indicator) {
+      indicator = document.createElement('option');
+      indicator.id = 'autoswap-indicator';
+      indicator.value = 'autoswap';
+      indicator.textContent = `Auto: ${getLanguageName(settings.autoSwapLangA)} ⇄ ${getLanguageName(settings.autoSwapLangB)}`;
+      targetLanguageSelect.appendChild(indicator);
+    } else {
+      indicator.textContent = `Auto: ${getLanguageName(settings.autoSwapLangA)} ⇄ ${getLanguageName(settings.autoSwapLangB)}`;
+    }
+    targetLanguageSelect.value = 'autoswap';
+    targetLanguageSelect.disabled = true;
+    targetLanguageSelect.style.opacity = '0.7';
+  } else {
+    const indicator = document.getElementById('autoswap-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
+    targetLanguageSelect.value = settings.targetLang;
+    targetLanguageSelect.disabled = false;
+    targetLanguageSelect.style.opacity = '';
+  }
+}
+
+// Language code display name map
+function getLanguageName(code) {
+  const names = {
+    en: 'English',
+    ja: 'Japanese',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    zh: 'Chinese',
+    ko: 'Korean',
+    pt: 'Portuguese',
+    it: 'Italian',
+    ru: 'Russian',
+    hi: 'Hindi',
+    ar: 'Arabic'
+  };
+  return names[code] || code.toUpperCase();
 }
 
 // Run startup

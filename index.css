@@ -585,3 +585,324 @@ textarea::placeholder {
   50% { top: 40%; height: 30%; }
   100% { top: 90%; height: 10%; }
 }
+
+/* Header actions container */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+/* Clipboard History Drawer */
+.clipboard-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-drawer);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0);
+}
+
+.clipboard-drawer.hidden {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+.clipboard-header {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.clipboard-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clipboard-title-group h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.clipboard-title-group .header-icon {
+  color: var(--accent-hover);
+}
+
+.clipboard-search-container {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-hint);
+  pointer-events: none;
+}
+
+#clipboard-search {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px 6px 30px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s ease;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#clipboard-search:focus {
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.25);
+}
+
+.clear-history-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.clear-history-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.clear-history-btn:active {
+  transform: scale(0.96);
+}
+
+.clipboard-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clipboard-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 12px;
+}
+
+.clipboard-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.clipboard-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+}
+
+.item-shortcut {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.clipboard-item.active .item-shortcut {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.item-meta {
+  font-size: 0.68rem;
+  color: var(--text-hint);
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.item-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-hint);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.clipboard-item:hover .item-action-btn,
+.clipboard-item.active .item-action-btn {
+  opacity: 1;
+  color: var(--text-secondary);
+}
+
+.item-action-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary) !important;
+}
+
+.clipboard-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-hint);
+  font-style: italic;
+  font-size: 0.85rem;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.clipboard-footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.clipboard-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.clipboard-hint kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  margin: 0 1px;
+}
+
+.clipboard-hint-esc {
+  font-size: 0.7rem;
+  color: var(--text-hint);
+  font-weight: 500;
+}
+
+/* Header button label styling */
+.header-actions .icon-btn {
+  width: auto !important;
+  padding: 0 8px;
+  gap: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.header-actions .icon-btn:hover .btn-label {
+  color: var(--text-primary);
+}
+
+/* Settings Shortcuts list styling */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.shortcut-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+}
+
+.shortcut-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.shortcut-display-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-hover);
+}
