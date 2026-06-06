@@ -3,6 +3,7 @@
 module.exports = {
   packagerConfig: {
     name: process.env.GITHUB_RUN_NUMBER ? `OnPopup-${process.env.GITHUB_RUN_NUMBER}` : 'OnPopup',
+    appBundleId: process.env.GITHUB_RUN_NUMBER ? `com.onpopup.app.run${process.env.GITHUB_RUN_NUMBER}` : 'com.onpopup.app',
     asar: { unpack: "assets/**" },
     icon: './assets/icon', // Resolves to icon.icns on macOS and icon.ico on Windows
   },
