@@ -102,17 +102,36 @@ async function getSelectedText() {
       await new Promise(resolve => setTimeout(resolve, 100));
       try {
         if (lastActiveApp) {
-          const appleScript = `
-            tell application "${lastActiveApp}" to activate
-            delay 0.05
-            tell application "System Events" to keystroke "c" using {command down}
-          `;
-          execSync(`osascript -e '${appleScript}'`);
-        } else {
+          execSync(`osascript -e 'tell application "${lastActiveApp}" to activate'`);
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        // Use native CGEvent helper to bypass osascript Automation (1002) errors
+        const helperPath = path.join(__dirname, '..', '..', 'assets', 'copy-helper');
+          
+        let helperExecuted = false;
+        if (fs.existsSync(helperPath)) {
+          try {
+            let execPath = helperPath;
+            if (app.isPackaged) {
+              execPath = path.join(app.getPath('temp'), 'copy-helper-bin');
+              // Extract from ASAR to physical file system
+              const buffer = fs.readFileSync(helperPath);
+              fs.writeFileSync(execPath, buffer);
+              execSync(`chmod +x "${execPath}"`);
+            }
+            execSync(`"${execPath}"`);
+            helperExecuted = true;
+          } catch (err) {
+            console.error('Failed to run copy-helper, falling back to osascript:', err);
+          }
+        }
+        
+        if (!helperExecuted) {
           execSync(`osascript -e 'tell application "System Events" to keystroke "c" using {command down}'`);
         }
       } catch (asErr) {
-        console.error('AppleScript copy failed:', asErr);
+        console.error('Copy simulation failed:', asErr);
       }
       await new Promise(resolve => setTimeout(resolve, 300));
     } else if (process.platform === 'win32') {
