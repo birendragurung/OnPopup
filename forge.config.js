@@ -2,6 +2,7 @@
 
 module.exports = {
   packagerConfig: {
+    name: process.env.GITHUB_RUN_NUMBER ? `OnPopup-${process.env.GITHUB_RUN_NUMBER}` : 'OnPopup',
     asar: { unpack: "assets/**" },
     icon: './assets/icon', // Resolves to icon.icns on macOS and icon.ico on Windows
   },
@@ -23,7 +24,7 @@ module.exports = {
     {
       name: '@electron-forge/maker-dmg',
       config: {
-        name: 'OnPopup Installation',
+        name: process.env.GITHUB_RUN_NUMBER ? `OnPopup-${process.env.GITHUB_RUN_NUMBER} Installation` : 'OnPopup Installation',
         icon: './assets/icon.icns',
         overwrite: true,
       },
