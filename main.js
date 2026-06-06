@@ -69,8 +69,14 @@ async function triggerClipboardHistory() {
 // App Lifecycles
 app.whenReady().then(() => {
   // Hide Dock icon on macOS so it runs purely as a status bar app
-  if (process.platform === 'darwin' && app.dock) {
-    app.dock.hide();
+  if (process.platform === 'darwin') {
+    if (app.dock) app.dock.hide();
+    
+    // Prompt for accessibility permissions (required for clipboard shortcuts)
+    const { systemPreferences } = require('electron');
+    if (!systemPreferences.isTrustedAccessibilityClient(false)) {
+      systemPreferences.isTrustedAccessibilityClient(true);
+    }
   }
 
   const currentSettings = settingsManager.loadSettings();
