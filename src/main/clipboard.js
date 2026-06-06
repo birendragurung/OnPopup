@@ -101,7 +101,16 @@ async function getSelectedText() {
     if (process.platform === 'darwin') {
       await new Promise(resolve => setTimeout(resolve, 100));
       try {
-        execSync(`osascript -e 'tell application "System Events" to keystroke "c" using {command down}'`);
+        if (lastActiveApp) {
+          const appleScript = `
+            tell application "${lastActiveApp}" to activate
+            delay 0.05
+            tell application "System Events" to keystroke "c" using {command down}
+          `;
+          execSync(`osascript -e '${appleScript}'`);
+        } else {
+          execSync(`osascript -e 'tell application "System Events" to keystroke "c" using {command down}'`);
+        }
       } catch (asErr) {
         console.error('AppleScript copy failed:', asErr);
       }
