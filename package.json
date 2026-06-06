@@ -42,35 +42,6 @@
     "electron-squirrel-startup": "^1.0.1"
   },
   "config": {
-    "forge": {
-      "packagerConfig": {
-        "asar": true,
-        "icon": "./assets/icon"
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-dmg",
-          "config": {
-            "name": "OnPopup Installation",
-            "icon": "./assets/icon.icns",
-            "overwrite": true
-          }
-        },
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "onpopup",
-            "setupIcon": "./assets/icon.ico",
-            "setupExe": "OnPopupSetup.exe"
-          }
-        }
-      ]
-    }
+    "forge": "forge.config.js"
   }
 }
