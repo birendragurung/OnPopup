@@ -1,4 +1,4 @@
-import { getLanguageName } from './src/renderer/utils.js';
+import { getLanguageName, SUPPORTED_LANGUAGES } from './src/renderer/utils.js';
 import * as tts from './src/renderer/tts.js';
 import * as settingsDrawer from './src/renderer/settingsDrawer.js';
 import * as clipboardDrawer from './src/renderer/clipboardDrawer.js';
@@ -49,8 +49,52 @@ let settings = {
 };
 
 let clipboardHistory = [];
+let previousDrawer = null;
+
+function populateLanguageDropdowns() {
+  const selects = [targetLanguageSelect, autoswapLangASelect, autoswapLangBSelect];
+  selects.forEach(select => {
+    if (!select) return;
+    select.innerHTML = '';
+    Object.entries(SUPPORTED_LANGUAGES).forEach(([code, name]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+  });
+}
+
+function showSettingsDrawer(show) {
+  if (show) {
+    if (clipboardDrawer.isVisible()) {
+      previousDrawer = 'clipboard';
+    } else {
+      previousDrawer = 'translator';
+    }
+    clipboardDrawer.toggleClipboardDrawer(false);
+    settingsDrawer.toggleSettingsDrawer(true, settings);
+  } else {
+    settingsDrawer.toggleSettingsDrawer(false, settings);
+    if (previousDrawer === 'clipboard') {
+      showClipboardDrawer(true, clipboardHistory);
+    } else {
+      sourceTextarea.focus();
+    }
+    previousDrawer = null;
+  }
+}
+
+function showClipboardDrawer(show, history) {
+  if (show) {
+    settingsDrawer.toggleSettingsDrawer(false);
+  }
+  clipboardDrawer.toggleClipboardDrawer(show, history);
+}
 
 async function init() {
+  populateLanguageDropdowns();
+
   // Load settings from Main
   const loadedSettings = await window.electronAPI.getSettings();
   if (loadedSettings) {
@@ -93,9 +137,7 @@ async function init() {
     openLogBtnEl: document.getElementById('settings-open-log'),
     onSaveCallback: handleSaveSettings,
     onOpenLogCallback: () => window.electronAPI.openLogFile(),
-    onCloseCallback: () => {
-      sourceTextarea.focus();
-    }
+    onCloseCallback: null
   });
 
   // Initialize Clipboard Drawer Controller
@@ -128,8 +170,8 @@ async function init() {
   // Listen for text captured from other windows
   window.electronAPI.onTranslateText((text) => {
     translator.showLoader(false);
-    settingsDrawer.toggleSettingsDrawer(false);
-    clipboardDrawer.toggleClipboardDrawer(false);
+    showSettingsDrawer(false);
+    showClipboardDrawer(false);
     
     if (!text || text.trim() === '') {
       sourceTextarea.value = '';
@@ -144,13 +186,13 @@ async function init() {
 
   // Listen for settings command from system tray
   window.electronAPI.onOpenSettings(() => {
-    settingsDrawer.toggleSettingsDrawer(true, settings);
+    showSettingsDrawer(true);
   });
 
   // Listen for clipboard history from global shortcut trigger
   window.electronAPI.onShowClipboardHistory((history) => {
     clipboardHistory = history;
-    clipboardDrawer.toggleClipboardDrawer(true, clipboardHistory);
+    showClipboardDrawer(true, clipboardHistory);
   });
 
   // Listen for real-time history updates
@@ -164,8 +206,8 @@ async function init() {
   // UI action bindings
   targetLanguageSelect.addEventListener('change', handleTargetLanguageChange);
   
-  settingsToggleBtn.addEventListener('click', () => settingsDrawer.toggleSettingsDrawer(true, settings));
-  settingsCloseBtn.addEventListener('click', () => settingsDrawer.toggleSettingsDrawer(false));
+  settingsToggleBtn.addEventListener('click', () => showSettingsDrawer(true));
+  settingsCloseBtn.addEventListener('click', () => showSettingsDrawer(false));
   
   githubLink.addEventListener('click', (e) => {
     e.preventDefault();
@@ -178,13 +220,13 @@ async function init() {
   clipboardToggleBtn.addEventListener('click', async () => {
     const history = await window.electronAPI.getClipboardHistory();
     clipboardHistory = history;
-    clipboardDrawer.toggleClipboardDrawer(true, clipboardHistory);
+    showClipboardDrawer(true, clipboardHistory);
   });
   clipboardToTranslatorBtn.addEventListener('click', () => {
-    clipboardDrawer.toggleClipboardDrawer(false);
+    showClipboardDrawer(false);
   });
   clipboardToSettingsBtn.addEventListener('click', () => {
-    settingsDrawer.toggleSettingsDrawer(true, settings);
+    showSettingsDrawer(true);
   });
 
   // Global key navigation and triggers
@@ -194,7 +236,7 @@ async function init() {
 
     if (e.key === 'Escape') {
       if (!settingsDrawerEl.classList.contains('hidden')) {
-        settingsDrawer.toggleSettingsDrawer(false);
+        showSettingsDrawer(false);
       } else {
         tts.stop();
         resetSpeakBtn();
@@ -213,7 +255,7 @@ async function handleSaveSettings(newSettings) {
   const success = await window.electronAPI.saveSettings(newSettings);
   if (success) {
     settings = { ...settings, ...newSettings };
-    settingsDrawer.toggleSettingsDrawer(false);
+    showSettingsDrawer(false);
     updateTargetLanguageSelectState();
     translator.performTranslation(sourceTextarea.value);
   } else {
@@ -229,11 +271,11 @@ function handleTargetLanguageChange() {
 
 function pasteItem(text) {
   window.electronAPI.pasteClipboardItem(text);
-  clipboardDrawer.toggleClipboardDrawer(false);
+  showClipboardDrawer(false);
 }
 
 function translateClipboardItem(text) {
-  clipboardDrawer.toggleClipboardDrawer(false);
+  showClipboardDrawer(false);
   sourceTextarea.value = text;
   translator.toggleClearBtnVisibility();
   translator.performTranslation(text);

@@ -7,20 +7,21 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+export const SUPPORTED_LANGUAGES = {
+  en: 'English',
+  ja: 'Japanese',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  zh: 'Chinese',
+  ko: 'Korean',
+  pt: 'Portuguese',
+  it: 'Italian',
+  ru: 'Russian',
+  hi: 'Hindi',
+  ar: 'Arabic'
+};
+
 export function getLanguageName(code) {
-  const names = {
-    en: 'English',
-    ja: 'Japanese',
-    es: 'Spanish',
-    fr: 'French',
-    de: 'German',
-    zh: 'Chinese',
-    ko: 'Korean',
-    pt: 'Portuguese',
-    it: 'Italian',
-    ru: 'Russian',
-    hi: 'Hindi',
-    ar: 'Arabic'
-  };
-  return names[code] || code.toUpperCase();
+  return SUPPORTED_LANGUAGES[code] || code.toUpperCase();
 }
