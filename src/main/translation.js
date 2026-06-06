@@ -44,7 +44,7 @@ function determineTargetLanguage(text) {
 
   const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(text);
   const hasRussian = /[\u0400-\u04ff]/.test(text);
-  const hasHindi = /[\u0900-\u097f]/.test(text);
+  const hasDevanagari = /[\u0900-\u097f]/.test(text);
   const hasArabic = /[\u0600-\u06ff]/.test(text);
   const hasChinese = /[\u4e00-\u9fff]/.test(text) && !hasJapanese;
 
@@ -58,7 +58,11 @@ function determineTargetLanguage(text) {
   }
   if (langA === 'hi' || langB === 'hi') {
     const otherLang = langA === 'hi' ? langB : langA;
-    return hasHindi ? otherLang : 'hi';
+    return hasDevanagari ? otherLang : 'hi';
+  }
+  if (langA === 'ne' || langB === 'ne') {
+    const otherLang = langA === 'ne' ? langB : langA;
+    return hasDevanagari ? otherLang : 'ne';
   }
   if (langA === 'ar' || langB === 'ar') {
     const otherLang = langA === 'ar' ? langB : langA;

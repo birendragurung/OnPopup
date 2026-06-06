@@ -12,17 +12,27 @@ const PREFERRED_VOICES = {
   pt: ['luciana', 'google'],
   it: ['alice', 'google'],
   hi: ['lekha', 'google'],
-  ar: ['maged', 'google']
+  ar: ['maged', 'google'],
+  ne: ['google']
 };
 
 function selectVoice(targetLang) {
   const voices = speechSynthesis.getVoices();
-  const cleanLang = targetLang.toLowerCase().split('-')[0];
+  let cleanLang = targetLang.toLowerCase().split('-')[0];
   
-  const matchingVoices = voices.filter(v => {
+  let matchingVoices = voices.filter(v => {
     const voiceLang = v.lang.toLowerCase().replace('_', '-');
     return voiceLang.startsWith(cleanLang);
   });
+
+  // If no matching voices for Nepali, fallback to Hindi since both use Devanagari script
+  if (matchingVoices.length === 0 && cleanLang === 'ne') {
+    cleanLang = 'hi';
+    matchingVoices = voices.filter(v => {
+      const voiceLang = v.lang.toLowerCase().replace('_', '-');
+      return voiceLang.startsWith(cleanLang);
+    });
+  }
 
   if (matchingVoices.length === 0) return null;
 

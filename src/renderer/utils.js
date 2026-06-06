@@ -19,7 +19,8 @@ export const SUPPORTED_LANGUAGES = {
   it: 'Italian',
   ru: 'Russian',
   hi: 'Hindi',
-  ar: 'Arabic'
+  ar: 'Arabic',
+  ne: 'Nepali'
 };
 
 export function getLanguageName(code) {
