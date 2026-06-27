@@ -43,10 +43,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Package Application
+      - name: Package Application (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           umask 0022
           npm run make
+
+      - name: Package Application (Non-Linux)
+        if: startsWith(matrix.os, 'ubuntu') == false
+        run: npm run make
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
