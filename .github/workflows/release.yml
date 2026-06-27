@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: 'npm'
 
       - name: Install Linux Build Dependencies
@@ -44,6 +44,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          body_path: release-notes.md
           files: |
             out/make/**/*.dmg
             out/make/**/*.zip
