@@ -38,7 +38,9 @@ jobs:
         run: npm ci
 
       - name: Package Application
-        run: npm run make
+        run: |
+          umask 0022
+          npm run make
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
