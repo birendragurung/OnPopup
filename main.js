@@ -1,4 +1,4 @@
-const { app, ipcMain, clipboard, shell, BrowserWindow } = require('electron');
+const { app, ipcMain, clipboard, shell, BrowserWindow, dialog } = require('electron');
 const fs = require('fs');
 
 // Import sub-modules
@@ -17,6 +17,24 @@ windowManager.initWindow({
 // Orchestrate the translation capture & window presentation flow
 async function triggerTranslation() {
   if (process.platform === 'darwin') {
+    const { systemPreferences } = require('electron');
+    if (!systemPreferences.isTrustedAccessibilityClient(false)) {
+      const response = dialog.showMessageBoxSync({
+        type: 'warning',
+        buttons: ['Grant Permission', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Accessibility Permission Required',
+        message: 'Accessibility Permission Required',
+        detail: 'OnPopup cannot copy the selected text because Accessibility permission is not granted.\n\nPlease click "Grant Permission" to enable it in System Settings.'
+      });
+
+      if (response === 0) {
+        systemPreferences.isTrustedAccessibilityClient(true);
+        shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+      }
+      return;
+    }
     clipboardManager.updateLastActiveApp();
   }
 
@@ -68,15 +86,28 @@ async function triggerClipboardHistory() {
 
 // App Lifecycles
 app.whenReady().then(() => {
-  // Hide Dock icon on macOS so it runs purely as a status bar app
+  // Prompt for accessibility permissions (required for clipboard shortcuts)
   if (process.platform === 'darwin') {
-    if (app.dock) app.dock.hide();
-    
-    // Prompt for accessibility permissions (required for clipboard shortcuts)
     const { systemPreferences } = require('electron');
     if (!systemPreferences.isTrustedAccessibilityClient(false)) {
-      systemPreferences.isTrustedAccessibilityClient(true);
+      const response = dialog.showMessageBoxSync({
+        type: 'info',
+        buttons: ['Grant Permission', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Accessibility Permission Required',
+        message: 'OnPopup Needs Accessibility Permission',
+        detail: 'OnPopup requires Accessibility permission to automatically copy the text you select and translate it.\n\nPlease click "Grant Permission" and check the box for OnPopup in the System Settings window that opens.'
+      });
+
+      if (response === 0) {
+        systemPreferences.isTrustedAccessibilityClient(true);
+        shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+      }
     }
+
+    // Hide Dock icon AFTER prompting for accessibility so the prompt is not suppressed by macOS
+    if (app.dock) app.dock.hide();
   }
 
   const currentSettings = settingsManager.loadSettings();
