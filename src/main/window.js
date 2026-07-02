@@ -29,6 +29,7 @@ function createWindow(settings, saveWindowBounds) {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: true,
+    fullscreenable: false,
     minWidth: 350,
     minHeight: 260,
     webPreferences: {
@@ -37,6 +38,19 @@ function createWindow(settings, saveWindowBounds) {
       contextIsolation: true
     }
   });
+
+  if (process.platform === 'darwin') {
+    // Join the currently active Space (including fullscreen ones) when shown,
+    // instead of forcing macOS to switch to the Space the window was last on.
+    // Without this, triggering the shortcut from another workspace switches
+    // Spaces, the window briefly loses focus mid-transition, and the blur
+    // handler below hides it immediately.
+    mainWindow.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreenSpaces: true,
+      skipTransformProcessType: true
+    });
+    mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
+  }
 
   mainWindow.loadFile(path.join(__dirname, '..', '..', 'index.html'));
 
